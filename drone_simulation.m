@@ -18,9 +18,12 @@ thrust_coefficient = 200;
 % Controller portion to figure out real values
 input1 = 1;
 input2 = 2;
-input3 = 3;
+input3 = 5;
 input4 = 4;
 
+thetadot = 3*pi/8;
+
+m = 16;
 for t = times
     % Take input from our controller.
     % These are where the inputs abouve are supposed to come from 
@@ -28,8 +31,13 @@ for t = times
 
     % I'm trying to find omega in the model using the integrator, but
     % idk if that is working
-    %omega = thetadot2omega(thetadot, theta);
-    
+    I = [m*(pos(2)^2+pos(3)^2) 0 0;
+         0 m*(pos(1)^2+pos(3)^2) 0;
+         0 0 m*(pos(1)^2+pos(2)^2)];
+
+    omega = thetadot2omega(thetadot, theta);
+    a = sim('drone_model',200);
+    a.angular_accel
     % Compute linear and angular accelerations.
     % Haven't looked at this yet
     %a = acceleration(i, theta, xdot, m, g, k, kd);
@@ -43,3 +51,12 @@ for t = times
 %     xdot = xdot + dt * a;
 %     x = x + dt * xdot;
 end
+
+function omega = thetadot2omega(thetadot, theta)
+    rotation = [1 0 -sin(theta(2));
+             0 cos(theta(1)) cos(theta(2))*sin(theta(1));
+             0 -sin(theta(1)) cos(theta(2))*cos(theta(1))];
+         
+    omega = rotation .* thetadot;
+end
+
