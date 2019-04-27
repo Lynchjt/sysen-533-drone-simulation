@@ -21,7 +21,8 @@ input2 = 2;
 input3 = 5;
 input4 = 4;
 
-thetadot = 3*pi/8;
+thetadot_val = 3*pi/8;
+thetadot = [thetadot_val;thetadot_val;thetadot_val]
 
 m = 16;
 for t = times
@@ -57,6 +58,6 @@ function omega = thetadot2omega(thetadot, theta)
              0 cos(theta(1)) cos(theta(2))*sin(theta(1));
              0 -sin(theta(1)) cos(theta(2))*cos(theta(1))];
          
-    omega = rotation .* thetadot;
+    omega = rotation * thetadot;
 end
 
