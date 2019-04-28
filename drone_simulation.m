@@ -9,9 +9,11 @@ times = start_time:dt:end_time;
 N = numel(times);
 
 pos = [5;5;5];
-velocity = [0;0;0];
+velocity = [0;0;1];
 theta = [0;0;0];
 
+g = [0; 0; -9.8];
+ 
 length = 16;
 drag_coefficient = 0;
 thrust_coefficient = 200;
@@ -19,10 +21,10 @@ global_drag_coef = .05;
 
 % I just made these numbers up. I think we need to look at the PD
 % Controller portion to figure out real values
-input1 = 10;
-input2 = -10;
-input3 = 10;
-input4 = -10;
+input1 = 50;
+input2 = -50;
+input3 = 50;
+input4 = -50;
 
 thetadot_val = 3*pi/8;
 thetadot = [thetadot_val;thetadot_val;thetadot_val];
@@ -48,7 +50,6 @@ for t = times
     
     % Run simulation to calculate torque and angular acceleration
     result = sim('drone_model','CaptureErrors','on');
-    
     % Why does the simulation return a long vector of angular
     % acceleration?????? Workaround to take the first 3x1 vector
 %     omegadot = angular_acceleration(input1,input2,input3,input4,omega,I,length,drag_coefficient,thrust_coefficient);
@@ -56,7 +57,7 @@ for t = times
     omegadot = result.angular_accel;
     
     omega = omega + dt * omegadot;
-
+    
     thetadot = omega2thetadog(omega, theta);
     theta = theta + dt * thetadot;
     velocity = velocity + dt * a;
@@ -117,8 +118,9 @@ R = [cos_phi*cos_psi-cos_omega*sin_phi*sin_psi -cos_psi*sin_phi-cos_phi*cos_omeg
 end
 
 function a = acceleration(input1,input2,input3,input4, angles, xdot, m, g, k, kd)
-    gravity = [0; 0; -g];
-    R = RotationMatrix(angles);
+gravity = [0; 0; -9.8];
+    
+R = RotationMatrix(angles);
     T = R * thrust(input1,input2,input3,input4, k);
     Fd = -kd * xdot;
     a = gravity + 1 / m * T + Fd;
