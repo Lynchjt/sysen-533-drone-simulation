@@ -6,7 +6,7 @@ times = start_time:dt:end_time;
 % Number of points in the simulation.
 N = numel(times);
 
-pos = [1;1;1];
+pos = [5;5;5];
 velocity = [0;0;0];
 theta = [0;0;0];
 
@@ -39,34 +39,59 @@ for t = times
          0 0 m*(pos(1)^2+pos(2)^2)];
 
     omega = thetadot2omega(thetadot, theta);
-%     a = sim('drone_model',200);
-%     a.angular_accel
+
     % Compute linear and angular accelerations.
     % Haven't looked at this yet
     a = acceleration(i, theta, velocity, m, 9.8, thrust_coefficient, global_drag_coef);
     
-    % Trying to do these computations in the simulink model
-    %omegadot = angular_acceleration(i, omega, I, L, b, k);
-    a = sim('drone_model');
+    % Run simulation to calculate torque and angular acceleration
+%     sim = sim('drone_model');
     
+    omegadot = angular_acceleration(input1,input2,input3,input4,omega,I,length,drag_coefficient,thrust_coefficient);
     % Why does the simulation return a long vector of angular
-    % velocities?????? Workaround to take the first 3x1 vector
-    omegadot = a.angular_accel(1:3,1);
-
+    % acceleration?????? Workaround to take the first 3x1 vector
+%     omegadot = sim.angular_accel(1:3,1);
+    
     omega = omega + dt * omegadot;
 
-%     thetadot = omega2thetadot(omega, theta);
-%     theta = theta + dt * thetadot;
-%     xdot = xdot + dt * a;
-%     x = x + dt * xdot;
+    thetadot = omega2thetadog(omega, theta);
+    theta = theta + dt * thetadot;
+    velocity = velocity + dt * a;
+    pos = pos + dt * velocity;
+    
+    pos
+    pause;
 end
 
-function omega = thetadot2omega(thetadot, theta)
-    rotation = [1 0 -sin(theta(2));
-             0 cos(theta(1)) cos(theta(2))*sin(theta(1));
-             0 -sin(theta(1)) cos(theta(2))*cos(theta(1))];
-         
+function tau = torques(input1,input2,input3,input4, length, drag_coefficient, thrust_coefficient)
+    % Inputs are values for ?i
+
+    tau = [
+    length * thrust_coefficient * (input1 - input3)
+
+    length * thrust_coefficient * (input2 - input4)
+    drag_coefficient * (input1 - input2 + input3 - input4)
+    ];
+end
+
+function omegadot = angular_acceleration(input1,input2,input3,input4, omega, I, length, drag_coefficient, thrust_coefficient)
+    tau = torques(input1,input2,input3,input4, length, drag_coefficient, thrust_coefficient);
+    omegadot = inv(I) * (tau - cross(omega, I * omega));
+end
+function omega = thetadot2omega(thetadot, theta)  
+rotation = [1 0 -sin(theta(2));
+         0 cos(theta(1)) cos(theta(2))*sin(theta(1));
+         0 -sin(theta(1)) cos(theta(2))*cos(theta(1))];
+
     omega = rotation * thetadot;
+end
+
+function thetadot = omega2thetadog(omega, theta)
+rotation = [1 0 -sin(theta(2));
+         0 cos(theta(1)) cos(theta(2))*sin(theta(1));
+         0 -sin(theta(1)) cos(theta(2))*cos(theta(1))];
+ 
+    thetadot = rotation^-1*omega;
 end
 
 function T = thrust(inputs, k)
