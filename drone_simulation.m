@@ -1,3 +1,5 @@
+clear;
+
 start_time = 0;
 end_time = 10;
 dt = 0.005;
@@ -17,10 +19,10 @@ global_drag_coef = .05;
 
 % I just made these numbers up. I think we need to look at the PD
 % Controller portion to figure out real values
-input1 = 1;
-input2 = -1;
-input3 = 1;
-input4 = -1;
+input1 = 10;
+input2 = -10;
+input3 = 10;
+input4 = -10;
 
 thetadot_val = 3*pi/8;
 thetadot = [thetadot_val;thetadot_val;thetadot_val];
@@ -42,15 +44,16 @@ for t = times
 
     % Compute linear and angular accelerations.
     % Haven't looked at this yet
-    a = acceleration(i, theta, velocity, m, 9.8, thrust_coefficient, global_drag_coef);
+    a = acceleration(input1,input2,input3,input4, theta, velocity, m, 9.8, thrust_coefficient, global_drag_coef);
     
     % Run simulation to calculate torque and angular acceleration
-%     sim = sim('drone_model');
+    result = sim('drone_model','CaptureErrors','on');
     
-    omegadot = angular_acceleration(input1,input2,input3,input4,omega,I,length,drag_coefficient,thrust_coefficient);
     % Why does the simulation return a long vector of angular
     % acceleration?????? Workaround to take the first 3x1 vector
-%     omegadot = sim.angular_accel(1:3,1);
+%     omegadot = angular_acceleration(input1,input2,input3,input4,omega,I,length,drag_coefficient,thrust_coefficient);
+
+    omegadot = result.angular_accel;
     
     omega = omega + dt * omegadot;
 
@@ -60,7 +63,6 @@ for t = times
     pos = pos + dt * velocity;
     
     pos
-    pause;
 end
 
 function tau = torques(input1,input2,input3,input4, length, drag_coefficient, thrust_coefficient)
@@ -94,10 +96,10 @@ rotation = [1 0 -sin(theta(2));
     thetadot = rotation^-1*omega;
 end
 
-function T = thrust(inputs, k)
+function T = thrust(input1,input2,input3,input4, k)
     % Inputs are values for ?i
 
-    T = [0; 0; k * sum(inputs)];
+    T = [0; 0; k * (input1+input2+input3+input4)];
 end
 
 function R = RotationMatrix(angles)
@@ -114,10 +116,10 @@ R = [cos_phi*cos_psi-cos_omega*sin_phi*sin_psi -cos_psi*sin_phi-cos_phi*cos_omeg
      sin_phi*sin_omega cos_phi*sin_omega cos_omega];
 end
 
-function a = acceleration(inputs, angles, xdot, m, g, k, kd)
+function a = acceleration(input1,input2,input3,input4, angles, xdot, m, g, k, kd)
     gravity = [0; 0; -g];
     R = RotationMatrix(angles);
-    T = R * thrust(inputs, k);
+    T = R * thrust(input1,input2,input3,input4, k);
     Fd = -kd * xdot;
     a = gravity + 1 / m * T + Fd;
 end
